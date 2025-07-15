@@ -37,7 +37,6 @@ async function getConfig() {
 
 async function getCards(ext) {
     ext = argsify(ext)
-    // 頁數寫入cache
     var lastPage = {
         0: 1,
         1: 1,
@@ -80,7 +79,6 @@ async function getCards(ext) {
         })
     })
 
-    // get lastpage
     if (page == 1) {
         const pageNumber = $html.text(data, '#MainContent_header_nav .page-number')
         const num = pageNumber.split('/')[1]
@@ -105,7 +103,6 @@ async function getTracks(ext) {
         },
     })
 
-    // 檢查是不是多集
     let playlist = $html.elements(data, '#rtlist li')
     if (playlist.length > 0) {
         playlist.forEach((element) => {
@@ -139,6 +136,7 @@ async function getTracks(ext) {
     })
 }
 
+// ✅ 修改后的 getPlayinfo 函数，支持 forward 播放器
 async function getPlayinfo(ext) {
     ext = argsify(ext)
     let url = ext.url.replace('www.', '')
@@ -150,8 +148,11 @@ async function getPlayinfo(ext) {
     })
 
     let playUrl = $html.attr(data, '#MainContent_videowindow video source', 'src')
+    const forwardUrl = `forward://${playUrl}`
 
-    return jsonify({ urls: [playUrl] })
+    return jsonify({
+        urls: [forwardUrl]
+    })
 }
 
 async function search(ext) {
