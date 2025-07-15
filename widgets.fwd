@@ -164,6 +164,15 @@
       "version": "2.1.0",
       "author": "Ti",
       "url": "https://raw.githubusercontent.com/bemarkt/scripts/refs/heads/master/provider/Forward/widgets/podcast.js"
+     },
+     {
+      "id": "4kyv",
+      "title": "影视",
+      "description": "可能都是剧啊剧啊",
+      "requiredVersion": "0.0.1",
+      "version": "1.0.0",
+      "author": "yanxi",
+      "url": "https://raw.githubusercontent.com/YccccXo/ForWardWidgets/refs/heads/main/4kav.js"
      }
     ]
    }
