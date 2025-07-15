@@ -1,191 +1,115 @@
-// tv
-
-const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1'
-
-let appConfig = {
-    ver: 1,
-    title: '4k-av',
-    site: 'https://4k-av.com',
-    tabs: [
+var WidgetMetadata = {
+  id: "av_4k",
+  title: "4K AV",
+  description: "获取 4k-av.com 的在线电影、电视剧资源",
+  author: "你自己",
+  site: "https://4k-av.com",
+  version: "1.0.0",
+  requiredVersion: "0.0.1",
+  modules: [
+    {
+      title: "电影",
+      description: "获取在线电影",
+      requiresWebView: false,
+      functionName: "getMovies",
+      params: [
         {
-            name: '首頁',
-            ext: {
-                id: 0,
-                url: 'https://4k-av.com',
-            },
-        },
+          name: "page",
+          title: "页数",
+          type: "page"
+        }
+      ]
+    },
+    {
+      title: "电视剧",
+      description: "获取在线电视剧",
+      requiresWebView: false,
+      functionName: "getTVSeries",
+      params: [
         {
-            name: '電影',
-            ext: {
-                id: 1,
-                url: 'https://4k-av.com/movie',
-            },
-        },
-        {
-            name: '電視劇',
-            ext: {
-                id: 2,
-                url: 'https://4k-av.com/tv',
-            },
-        },
-    ],
+          name: "page",
+          title: "页数",
+          type: "page"
+        }
+      ]
+    }
+  ]
 }
 
-async function getConfig() {
-    return jsonify(appConfig)
+const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Mobile/15E148 Safari/604.1';
+const BASE_URL = 'https://4k-av.com';
+
+async function getVideos(id, page = 1) {
+  const url = page > 1 ? `${BASE_URL}/${id}/page-${page}.html` : `${BASE_URL}/${id}`;
+  const response = await Widget.http.get(url, {
+    headers: { 'User-Agent': UA }
+  });
+
+  const $ = Widget.html.load(response.data);
+  const elements = $('#MainContent_newestlist .virow .NTMitem');
+
+  const items = elements.map((i, el) => {
+    const $el = $(el);
+    const href = $el.find('.title a').attr('href');
+    const title = $el.find('.title h2').text().trim();
+    const cover = $el.find('.poster img').attr('src');
+    const subTitle = $el.find('label[title=分辨率]').text().split('/')[0];
+
+    return {
+      id: BASE_URL + href,
+      type: "url",
+      title: title,
+      posterPath: cover,
+      subtitle: subTitle,
+      link: BASE_URL + href
+    };
+  }).get();
+
+  return items;
 }
 
-async function getCards(ext) {
-    ext = argsify(ext)
-    var lastPage = {
-        0: 1,
-        1: 1,
-        2: 1,
-    }
-    let val = $cache.get('av')
-    if (val) {
-        lastPage = JSON.parse(val)
-    }
-
-    let cards = []
-    let { id, page = 1, url } = ext
-
-    if (page > 1) {
-        url += `/page-${lastPage[id] - page + 1}.html`
-    }
-
-    $print(`url: ${url}`)
-
-    const { data } = await $fetch.get(url, {
-        headers: {
-            'User-Agent': UA,
-        },
-    })
-
-    const elems = $html.elements(data, '#MainContent_newestlist .virow .NTMitem')
-    elems.forEach((element) => {
-        const href = $html.attr(element, '.title a', 'href')
-        const title = $html.text(element, '.title h2')
-        const cover = $html.attr(element, '.poster img', 'src')
-        const subTitle = $html.text(element, 'label[title=分辨率]').split('/')[0]
-        cards.push({
-            vod_id: href,
-            vod_name: title,
-            vod_pic: cover,
-            vod_remarks: subTitle,
-            ext: {
-                url: `${appConfig.site}${href}`,
-            },
-        })
-    })
-
-    if (page == 1) {
-        const pageNumber = $html.text(data, '#MainContent_header_nav .page-number')
-        const num = pageNumber.split('/')[1]
-        lastPage[id] = num
-        const jsonData = JSON.stringify(lastPage, null, 2)
-        $cache.set('av', jsonData)
-    }
-
-    return jsonify({
-        list: cards,
-    })
+async function getMovies(params = {}) {
+  const page = params.page || 1;
+  return getVideos('movie', page);
 }
 
-async function getTracks(ext) {
-    ext = argsify(ext)
-    let tracks = []
-    let url = ext.url
-
-    const { data } = await $fetch.get(url, {
-        headers: {
-            'User-Agent': UA,
-        },
-    })
-
-    let playlist = $html.elements(data, '#rtlist li')
-    if (playlist.length > 0) {
-        playlist.forEach((element) => {
-            let name = $html.text(element, 'span')
-            let url = $html.attr(element, 'img', 'src').replace('screenshot.jpg', '')
-            tracks.push({
-                name: name,
-                pan: '',
-                ext: {
-                    url,
-                },
-            })
-        })
-    } else {
-        tracks.push({
-            name: '播放',
-            pan: '',
-            ext: {
-                url,
-            },
-        })
-    }
-
-    return jsonify({
-        list: [
-            {
-                title: '默认分组',
-                tracks,
-            },
-        ],
-    })
+async function getTVSeries(params = {}) {
+  const page = params.page || 1;
+  return getVideos('tv', page);
 }
 
-// ✅ 修改后的 getPlayinfo 函数，支持 forward 播放器
-async function getPlayinfo(ext) {
-    ext = argsify(ext)
-    let url = ext.url.replace('www.', '')
+async function loadDetail(link) {
+  const response = await Widget.http.get(link, {
+    headers: { 'User-Agent': UA }
+  });
 
-    const { data } = await $fetch.get(url, {
-        headers: {
-            'User-Agent': UA,
-        },
-    })
+  const $ = Widget.html.load(response.data);
+  const playlistItems = $('#rtlist li');
 
-    let playUrl = $html.attr(data, '#MainContent_videowindow video source', 'src')
-    const forwardUrl = `forward://${playUrl}`
+  if (playlistItems.length > 0) {
+    const episodes = playlistItems.map((i, el) => {
+      const name = $(el).find('span').text().trim();
+      const thumb = $(el).find('img').attr('src');
+      const playBase = thumb.replace('screenshot.jpg', '');
+      return {
+        id: `forward://${playBase}`,
+        type: "url",
+        title: name || `第${i + 1}集`,
+        videoUrl: `forward://${playBase}`
+      };
+    }).get();
 
-    return jsonify({
-        urls: [forwardUrl]
-    })
-}
-
-async function search(ext) {
-    ext = argsify(ext)
-    let cards = []
-
-    let text = encodeURIComponent(ext.text)
-    let url = appConfig.site + `/s?q=${text}`
-
-    const { data } = await $fetch.get(url, {
-        headers: {
-            'User-Agent': UA,
-        },
-    })
-
-    const elems = $html.elements(data, '#MainContent_newestlist .virow .NTMitem')
-    elems.forEach((element) => {
-        const href = $html.attr(element, '.title a', 'href')
-        const title = $html.text(element, '.title h2')
-        const cover = $html.attr(element, '.poster img', 'src')
-        const subTitle = $html.text(element, 'label[title=分辨率]').split('/')[0]
-        cards.push({
-            vod_id: href,
-            vod_name: title,
-            vod_pic: cover,
-            vod_remarks: subTitle,
-            ext: {
-                url: `${appConfig.site}${href}`,
-            },
-        })
-    })
-
-    return jsonify({
-        list: cards,
-    })
+    return {
+      mediaType: "tv",
+      episodeItems: episodes
+    };
+  } else {
+    const src = $('#MainContent_videowindow video source').attr('src');
+    if (!src) throw new Error("未找到视频播放地址");
+    return {
+      mediaType: "movie",
+      videoUrl: `forward://${src}`,
+      type: "url"
+    };
+  }
 }
