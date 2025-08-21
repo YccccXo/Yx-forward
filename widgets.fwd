@@ -49,15 +49,6 @@
       "url": "https://raw.githubusercontent.com/bemarkt/scripts/refs/heads/master/provider/Forward/widgets/vod.js"
     },
     {
-      "id": "forward.combined.media.lists",
-      "title": "影视榜单",
-      "description": "获取TMDB和豆瓣的榜单",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.0",
-      "author": "阿米诺斯",
-      "url": "https://raw.githubusercontent.com/pack1r/ForwardWidgets/refs/heads/main/widgets/combined.js"
-    },
-    {
       "id": "bangumi_charts_tmdb_v3",
       "title": "Bangumi 热门榜单",
       "description": "获取Bangumi近期热门、每日放送数据，支持榜单筛选。",
